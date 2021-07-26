@@ -16,6 +16,7 @@ from homeassistant.components.cover import (
 
 from custom_components.tahoma.cover_devices.tahoma_cover import (
     COMMANDS_STOP,
+    SUPPORT_COVER_POSITION_LOW_SPEED,
     TahomaGenericCover,
 )
 
@@ -98,18 +99,32 @@ class VerticalCover(TahomaGenericCover):
         # Uno devices can have a position not in 0 to 100 range when unknown
         if position is None or position < 0 or position > 100:
             return None
-
         return 100 - position
 
     async def async_set_cover_position(self, **kwargs):
         """Move the cover to a specific position."""
         position = 100 - kwargs.get(ATTR_POSITION, 0)
-        await self.async_execute_command(COMMAND_SET_CLOSURE, position)
+        if self.is_low_speed_enabled():
+            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, position)
+        else:
+            await self.async_execute_command(COMMAND_SET_CLOSURE, position)
 
     async def async_open_cover(self, **_):
         """Open the cover."""
-        await self.async_execute_command(self.select_command(*COMMANDS_OPEN))
+        if self.is_low_speed_enabled():
+            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, 0)
+        else:
+            await self.async_execute_command(self.select_command(*COMMANDS_OPEN))
 
     async def async_close_cover(self, **_):
         """Close the cover."""
-        await self.async_execute_command(self.select_command(*COMMANDS_CLOSE))
+        if self.is_low_speed_enabled():
+            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, 100)
+        else:
+            await self.async_execute_command(self.select_command(*COMMANDS_CLOSE))
+
+    def is_low_speed_enabled(self):
+        """Return if low speed mode is enabled."""
+        switch_entity_id = f"{self.entity_id.replace('cover', 'switch')}_low_speed"
+        low_speed_entity = self.coordinator.hass.states.get(switch_entity_id)
+        return low_speed_entity.state if low_speed_entity else False
