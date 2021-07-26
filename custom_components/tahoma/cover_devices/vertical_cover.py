@@ -15,8 +15,8 @@ from homeassistant.components.cover import (
 )
 
 from custom_components.tahoma.cover_devices.tahoma_cover import (
+    COMMAND_SET_CLOSURE_AND_LINEAR_SPEED,
     COMMANDS_STOP,
-    SUPPORT_COVER_POSITION_LOW_SPEED,
     TahomaGenericCover,
 )
 
@@ -105,21 +105,23 @@ class VerticalCover(TahomaGenericCover):
         """Move the cover to a specific position."""
         position = 100 - kwargs.get(ATTR_POSITION, 0)
         if self.is_low_speed_enabled():
-            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, position)
+            await self.async_execute_command(
+                COMMAND_SET_CLOSURE_AND_LINEAR_SPEED, position
+            )
         else:
             await self.async_execute_command(COMMAND_SET_CLOSURE, position)
 
     async def async_open_cover(self, **_):
         """Open the cover."""
         if self.is_low_speed_enabled():
-            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, 0)
+            await self.async_execute_command(COMMAND_SET_CLOSURE_AND_LINEAR_SPEED, 0)
         else:
             await self.async_execute_command(self.select_command(*COMMANDS_OPEN))
 
     async def async_close_cover(self, **_):
         """Close the cover."""
         if self.is_low_speed_enabled():
-            await self.async_execute_command(SUPPORT_COVER_POSITION_LOW_SPEED, 100)
+            await self.async_execute_command(COMMAND_SET_CLOSURE_AND_LINEAR_SPEED, 100)
         else:
             await self.async_execute_command(self.select_command(*COMMANDS_CLOSE))
 
